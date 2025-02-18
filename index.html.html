@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            background-color: #34495e;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            background-color: #ecf0f1;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .cell:hover {
+            background-color: #bdc3c7;
+            transform: scale(1.1);
+        }
+        .cell.taken {
+            pointer-events: none;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        .message {
+            margin: 20px;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #c0392b;
+            transform: scale(1.1);
+        }
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic-Tac-Toe</h1>
+        <div class="menu" id="menu">
+            <button onclick="startMultiplayer()">Multiplayer</button>
+            <button onclick="startSinglePlayer()">Single Player</button>
+        </div>
+        <div class="game" id="game" style="display: none;">
+            <div class="board" id="board"></div>
+            <div class="message" id="message"></div>
+            <button onclick="restartGame()">Restart Game</button>
+            <button onclick="endGame()">End Game</button>
+        </div>
+    </div>
+    <script>
+        let player1, player2, currentPlayer, isSinglePlayer = false;
+        let gameBoard = ["", "", "", "", "", "", "", "", ""];
+
+        function startMultiplayer() {
+            player1 = prompt("Enter Player 1 Name:", "Player 1");
+            player2 = prompt("Enter Player 2 Name:", "Player 2");
+            isSinglePlayer = false;
+            startGame(player1);
+        }
+
+        function startSinglePlayer() {
+            player1 = prompt("Enter Your Name:", "Player 1");
+            player2 = "Computer";
+            isSinglePlayer = true;
+            startGame(player1);
+        }
+
+        function startGame(player) {
+            currentPlayer = player;
+            document.getElementById("menu").style.display = "none";
+            document.getElementById("game").style.display = "block";
+            createBoard();
+        }
+
+        function createBoard() {
+            const board = document.getElementById("board");
+            board.innerHTML = "";
+            gameBoard.forEach((cell, index) => {
+                const cellDiv = document.createElement("div");
+                cellDiv.classList.add("cell");
+                cellDiv.dataset.index = index;
+                cellDiv.textContent = cell;
+                cellDiv.addEventListener("click", makeMove);
+                board.appendChild(cellDiv);
+            });
+        }
+
+        function makeMove(event) {
+            const index = event.target.dataset.index;
+            if (gameBoard[index] === "") {
+                gameBoard[index] = currentPlayer === player1 ? "X" : "O";
+                event.target.textContent = gameBoard[index];
+                event.target.classList.add("taken");
+                if (checkWin()) {
+                    document.getElementById("message").textContent = `${currentPlayer} Wins!`;
+                    disableBoard();
+                    return;
+                }
+                if (gameBoard.every(cell => cell !== "")) {
+                    document.getElementById("message").textContent = "It's a Draw!";
+                    return;
+                }
+                currentPlayer = currentPlayer === player1 ? player2 : player1;
+                if (isSinglePlayer && currentPlayer === "Computer") {
+                    setTimeout(computerMove, 500);
+                }
+            }
+        }
+
+        function computerMove() {
+            let emptyCells = gameBoard.map((cell, index) => cell === "" ? index : null).filter(index => index !== null);
+            if (emptyCells.length > 0) {
+                let randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                gameBoard[randomIndex] = "O";
+                document.querySelector(`.cell[data-index='${randomIndex}']`).textContent = "O";
+                document.querySelector(`.cell[data-index='${randomIndex}']`).classList.add("taken");
+                if (checkWin()) {
+                    document.getElementById("message").textContent = "Computer Wins!";
+                    disableBoard();
+                    return;
+                }
+                currentPlayer = player1;
+            }
+        }
+
+        function checkWin() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], 
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], 
+                [0, 4, 8], [2, 4, 6] 
+            ];
+        
+            for (let pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+                    drawWinningLine(pattern);
+                    document.getElementById("message").textContent = `${currentPlayer} Wins!`;
+                    disableBoard();
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function drawWinningLine(pattern) {
+            const board = document.getElementById("board");
+            const line = document.createElement("div");
+            line.classList.add("winning-line");
+        
+            const cells = document.querySelectorAll(".cell");
+            const firstCell = cells[pattern[0]];
+            const middleCell = cells[pattern[1]];
+            const lastCell = cells[pattern[2]];
+            
+            const boardRect = board.getBoundingClientRect();
+            const firstRect = firstCell.getBoundingClientRect();
+            const lastRect = lastCell.getBoundingClientRect();
+        
+            const x1 = firstRect.left + firstRect.width / 2 - boardRect.left;
+            const y1 = firstRect.top + firstRect.height / 2 - boardRect.top;
+            const x2 = lastRect.left + lastRect.width / 2 - boardRect.left;
+            const y2 = lastRect.top + lastRect.height / 2 - boardRect.top;
+        
+            const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+        
+            line.style.position = "absolute";
+            line.style.background = "red";
+            line.style.width = `${length}px`;
+            line.style.height = "5px";
+            line.style.borderRadius = "5px";
+            line.style.left = `${x1}px`;
+            line.style.top = `${y1}px`;
+            line.style.transform = `rotate(${angle}deg)`;
+            line.style.transformOrigin = "left";
+        
+            board.appendChild(line);
+        }
+        
+        
+        function disableBoard() {
+            document.querySelectorAll(".cell").forEach(cell => cell.removeEventListener("click", makeMove));
+        }
+
+        function restartGame() {
+            gameBoard = ["", "", "", "", "", "", "", "", ""];
+            currentPlayer = player1;
+            document.getElementById("message").textContent = "";
+            createBoard();
+        }
+
+        function endGame() {
+            document.getElementById("game").style.display = "none";
+            document.getElementById("menu").style.display = "flex";
+        
+            gameBoard = ["", "", "", "", "", "", "", "", ""];
+            currentPlayer = null;
+            document.getElementById("message").textContent = "";
+        }
+    </script>
+</body>
+</html>
